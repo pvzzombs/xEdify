@@ -6,7 +6,7 @@
 #
 # Created by blackeangel (PayPal blackeangel)
 # Edited by Octanium (www.patreon.com/octanium)
-# Improved by pvzzombs (github.com/pvzzombs)
+# Edited by pvzzombs (github.com/pvzzombs)
 
 #Declare variables
 export UPD_ZIP="$3"
