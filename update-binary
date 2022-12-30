@@ -2,11 +2,11 @@
 #
 # xEdify binary for Android Recovery (TWRP)
 # Based on Unix-Shell script (bash)
-# Version: 0.2 beta
+# Version: 0.3.2021-5-31 beta
 #
 # Created by blackeangel (PayPal blackeangel)
 # Edited by Octanium (www.patreon.com/octanium)
-#
+# Improved by pvzzombs (github.com/pvzzombs)
 
 #Declare variables
 export UPD_ZIP="$3"
@@ -14,227 +14,373 @@ export UPD_INTERFACE="/proc/$$/fd/$2"
 export RECOVERY_SCRIPT_FD=$2
 export UPD_TEMP_FOLDER=/tmp
 export ZIP_TEMP_FOLDER=/zip_tmp
-set -o pipefail
+#set -o pipefail
 
-#Declare functions
-#Setup progress bar
+# Declare functions
+# Setup progress bar
 progress() {
-if [ $# != 2 ]
-then echo "$0 expects 2 args, got $#";
-  echo "usage: $0 <fraction> <duration>";
-else
- if [ $UPD_INTERFACE != " " ];then
- echo "progress ${1} ${2} " 1>&$UPD_INTERFACE;
- fi;
-fi
+	if [ $# != 2 ]; then
+		echo "$0 expects 2 args, got $#";
+		echo "Usage: $0 <fraction> <duration>";
+	else
+		if [ $UPD_INTERFACE != " " ]; then
+			echo "progress ${1} ${2} " 1>&$UPD_INTERFACE;
+		fi;
+	fi
+	return 0
 }
 
-#Show progress bar
+# Show progress bar
 show_progress() {
-progress $@
+	progress $@
 }
 
-#Set progress bar
+# Set progress bar
 set_progress() {
-if [ $# != 1 ]
-then echo "$0 expects 1 args, got $#";
-  echo "usage: $0 <fraction>";
-else
- if [ $UPD_INTERFACE != " " ]; then
- echo " set_progress ${1} " 1>&$UPD_INTERFACE;
- fi;
-fi
+	if [ $# != 1 ]; then
+		echo "$0 expects 1 args, got $#";
+		echo "Usage: $0 <fraction>";
+	else
+		if [ $UPD_INTERFACE != " " ]; then
+		echo " set_progress ${1} " 1>&$UPD_INTERFACE;
+		fi;
+	fi
+	return 0
 }
 
-#Show message
+# Show message
 ui_print() {
-if [ $UPD_INTERFACE != " " ]; then
-  echo "ui_print $* " 1>&$UPD_INTERFACE;
-  echo "ui_print " 1>&$UPD_INTERFACE;
-else
-  echo "$*";
-fi;
+	if [ $UPD_INTERFACE != " " ]; then
+		echo "ui_print $* " 1>&$UPD_INTERFACE;
+		echo "ui_print " 1>&$UPD_INTERFACE;
+	else
+		echo "$*";
+	fi;
+	return 0
 }
 
-#Copy file
-package_extract_file(){
-if [ $# != 2 ] 
- then echo "$0 expects 2 args, got $#";
-  echo "usage: $0 <src-file> <dst-file>";
-else unzip -p $UPD_ZIP $1 > $2;
-fi
+# Copy file
+package_extract_file() {
+	if [ $# != 2 ]; then
+		ui_print "$0 expects 2 args, got $#";
+		ui_print "Usage: $0 <src-file> <dst-file>";
+	else
+		unzip -p $UPD_ZIP $1 > $2;
+	fi
+	return 0
 }
 
-#Copy folder
-package_extract_folder(){
-if [ -d $UPD_ZIP_TEMP_FOLDER ] 
- then rm -rf $UPD_ZIP_TEMP_FOLDER
-fi
+# Copy folder
+package_extract_folder() {
+	if [ -d $ZIP_TEMP_FOLDER ]; then
+		rm -rf $ZIP_TEMP_FOLDER
+	fi
 
-if [ $# != 2 ] 
- then echo "$0 expects 2 args, got $#"; echo "usage: $0 <src-dir> <dst-dir>";
-else mkdir -p ZIP_TEMP_FOLDER
-  unzip $UPD_ZIP $1/* -d $UPD_ZIP_TEMP_FOLDER;
-  mv $UPD_ZIP_TEMP_FOLDER/$1 $2
-fi
+	if [ $# != 2 ]; then
+		ui_print "$0 expects 2 args, got $#";
+		ui_print "Usage: $0 <src-dir> <dst-dir>";
+	else
+		mkdir -p $ZIP_TEMP_FOLDER
+		unzip $UPD_ZIP $1/* -d $ZIP_TEMP_FOLDER;
+		mv $ZIP_TEMP_FOLDER/$1 $2
+	fi
+	return 0
 }
 
-#Set permission
+# Copy folder
+package_extract_dir() {
+	if [ $# != 2 ]; then
+		ui_print "$0 expects 2 args, got $#";
+		ui_print "Usage: $0 <src-dir> <dst-dir>";
+	else
+		unzip $UPD_ZIP $1/* -d $2
+	fi
+	return 0
+}
+
+# Set permission
 set_perm() {
-if [ $# != 2 ] 
- then echo " $0 expects 4 args, got $#";
-  echo "usage: $0 <uid> <gid> <mode> <pathtofile>[, ... pathtofileN]" ;
-else
- us=$(id -u $1)
- gr=$(id -g $2)
- mode=$3
- shift 3
- for item in "$*"; do
-     chown ${us}.${gr} $item
-     chown ${us}:${gr} $item
-     chmod $mode $item
- done
-fi
+	if [ $# != 2 ]; then
+		ui_print "$0 expects 4 args, got $#";
+		ui_print "Usage: $0 <uid> <gid> <mode> <pathtofile>[, ... pathtofileN]" ;
+	else
+		us=$(id -u $1)
+		gr=$(id -g $2)
+		mode=$3
+		shift 3
+		for item in "$*"; do
+			chown ${us}.${gr} $item
+			chown ${us}:${gr} $item
+			chmod $mode $item
+		done
+	fi
 }
+
 stdout_to_ui_print() {
-while read -r line; do
-ui_print "$line"
-done
+	while read -r line; do
+		ui_print "$line"
+	done
+	return 0
 }
+
 to_ui_print() {
-eval "$*" | stdout_to_ui_print
+	eval "$*" | stdout_to_ui_print
+	return 0
 }
-getprop(){
-bp=/system/build.prop
-if [ -f " $bp"  ]; then
- grep " $1" $bp | sed 's/.*=//'
- else
- echo "System not installed!"
-fi
+
+getprop() {
+	bp=/system/build.prop
+	if [ -f " $bp"  ]; then
+		grep " $1" $bp | sed 's/.*=//'
+	else
+		ui_print "ERROR - System not installed!"
+	fi
+	return 0
 }
 
 #Set prop value
-setprop(){
-bp=/system/build.prop
-if [ -f " $bp" ]; then
-par=$(echo -n $1 | sed -r 's/=.+//')
-  if grep -q "$par" $bp; then
-      sed -i "s/$par=.*/$1/g" $bp
-  else
-      echo "$1" >> $bp
-  fi
-else
-	echo "System not installed!"
-	exit
-fi
+setprop() {
+	bp=/system/build.prop
+	if [ -f " $bp" ]; then
+		par=$(echo -n $1 | sed -r 's/=.+//')
+		if grep -q "$par" $bp; then
+			sed -i "s/$par=.*/$1/g" $bp
+		else
+			echo "$1" >> $bp
+		fi
+	else
+		echo "ERROR - System not installed!"
+		exit
+	fi
+	return 0
 }
 
-file_getprop(){
-if [ -f "$1" ]; then
-	grep "$2" "$1" | sed 's/.*=//'
-else
-	echo "prop file not found"
-fi
+file_getprop() {
+	if [ -f "$1" ]; then
+		grep "$2" "$1" | sed 's/.*=//'
+	else
+		echo "ERROR - prop file not found"
+	fi
+	return 0
 }
 
 #Set permission recursive
 set_perm_recursive() {
-  dirs=$(echo $* | awk '{ print substr($0, index($0,$5)) }');
-  for i in $dirs; do
-    chown -R $1.$2 $i; chown -R $1:$2 $i;
-    find "$i" -type d -exec chmod $3 {} +;
-    find "$i" -type f -exec chmod $4 {} +;
-  done;
+	dirs=$(echo $* | awk '{ print substr($0, index($0,$5)) }');
+	for i in $dirs; do
+		chown -R $1.$2 $i; chown -R $1:$2 $i;
+		find "$i" -type d -exec chmod $3 {} +;
+		find "$i" -type f -exec chmod $4 {} +;
+	done;
+	return 0
 }
 
 is_mounted() {
-if [ ! -z "$2" ]; then
-  cat /proc/mounts | grep $1 | grep $2, >/dev/null
-else
-  cat /proc/mounts | grep $1 >/dev/null
-fi
-return $?
+	if [ ! -z "$2" ]; then
+		cat /proc/mounts | grep $1 | grep $2, >/dev/null
+	else
+		cat /proc/mounts | grep $1 >/dev/null
+	fi
+	return $?
 }
 
 #Set wipe
-wipe(){
-if [ $1 == dalvik ]; then
-if (! is_mounted /data rw); then mount -o rw,remount /data; fi
-if (! is_mounted /data rw); then mount -o rw,remount /data /data; fi
-rm -rf /data/dalvik-cache/*
-fi
-if [ $1 == /data/ ]; then
-if (! is_mounted /data rw); then mount -o rw,remount /data; fi
-if (! is_mounted /data rw); then mount -o rw,remount /data /data; fi
-find data/* -! -regex 'data/media.*' -delete
-fi
-if [ $1 == caches ]; then
-if (! is_mounted /data rw); then mount -o rw,remount /data; fi
-if (! is_mounted /data rw); then mount -o rw,remount /data /data; fi
-if (! is_mounted /cache rw); then mount -o rw,remount /cache; fi
-if (! is_mounted /cache rw); then mount -o rw,remount /cache /cache; fi
- rm -rf /data/dalvik-cache/*
- rm -rf /cache/*
-fi
-if [ $1 == /system ]; then
-if (! is_mounted /system rw); then mount -o rw,remount /system; fi
-if (! is_mounted /system rw); then mount -o rw,remount /system /system; fi
-rm -rf /system/*
-fi
-if [ $1 == /cache ]; then
-if (! is_mounted /cache rw); then mount -o rw,remount /cache; fi
-if (! is_mounted /cache rw); then mount -o rw,remount /cache /cache; fi
- rm -rf /cache/*
-fi
-if [ $1 == "userdata" ]; then
-if (! is_mounted /data rw); then mount -o rw,remount /data; fi
-if (! is_mounted /data rw); then mount -o rw,remount /data /data; fi
-rm -rf /data/*
-fi
+wipe() {
+	if [ $1 == dalvik ]; then
+		if (! is_mounted /data rw); then mount -o rw,remount /data; fi
+		if (! is_mounted /data rw); then mount -o rw,remount /data /data; fi
+		rm -rf /data/dalvik-cache/*
+	fi
+	if [ $1 == /data/ ]; then
+		if (! is_mounted /data rw); then mount -o rw,remount /data; fi
+		if (! is_mounted /data rw); then mount -o rw,remount /data /data; fi
+		find data/* -! -regex 'data/media.*' -delete
+	fi
+	if [ $1 == caches ]; then
+		if (! is_mounted /data rw); then mount -o rw,remount /data; fi
+		if (! is_mounted /data rw); then mount -o rw,remount /data /data; fi
+		if (! is_mounted /cache rw); then mount -o rw,remount /cache; fi
+		if (! is_mounted /cache rw); then mount -o rw,remount /cache /cache; fi
+		rm -rf /data/dalvik-cache/*
+		rm -rf /cache/*
+	fi
+	if [ $1 == /system ]; then
+		if (! is_mounted /system rw); then mount -o rw,remount /system; fi
+		if (! is_mounted /system rw); then mount -o rw,remount /system /system; fi
+		rm -rf /system/*
+	fi
+	if [ $1 == /cache ]; then
+		if (! is_mounted /cache rw); then mount -o rw,remount /cache; fi
+		if (! is_mounted /cache rw); then mount -o rw,remount /cache /cache; fi
+		rm -rf /cache/*
+	fi
+	if [ $1 == "userdata" ]; then
+		if (! is_mounted /data rw); then mount -o rw,remount /data; fi
+		if (! is_mounted /data rw); then mount -o rw,remount /data /data; fi
+		rm -rf /data/*
+	fi
+	return 0
 }
+
 remount_system_rw() {
-if (! is_mounted /system rw); then mount -o rw,remount /system; fi
-if (! is_mounted /system rw); then mount -o rw,remount /system /system; fi
+	if (! is_mounted /system rw); then mount -o rw,remount /system; fi
+	if (! is_mounted /system rw); then mount -o rw,remount /system /system; fi
+	return 0
 }
 
 #Install boot
 install_boot() {
-if [ -z " $BOOTIMAGE" ]; then
- for PARTITION in kern-a KERN-A android_boot ANDROID_BOOT kernel KERNEL boot BOOT lnx LNX; do
-    BOOTIMAGE=$(readlink /dev/block/by-name/$PARTITION || readlink /dev/block/platform/*/by-name/$PARTITION || readlink /dev/block/platform/*/*/by-name/$PARTITION)
-    if [ ! -z "$BOOTIMAGE" ]; then break; fi
- done
-fi
-unzip -o "$UPD_ZIP" boot.img -d " /tmp/"
-dd if=/tmp/boot.img of=$BOOTIMAGE
-rm /tmp/boot.img
+	if [ -z "$BOOTIMAGE" ]; then
+		for PARTITION in kern-a KERN-A android_boot ANDROID_BOOT kernel KERNEL boot BOOT lnx LNX; do
+			BOOTIMAGE=$(readlink /dev/block/by-name/$PARTITION || readlink /dev/block/platform/*/by-name/$PARTITION || readlink /dev/block/platform/*/*/by-name/$PARTITION)
+			if [ ! -z "$BOOTIMAGE" ]; then break; fi
+		done
+	fi
+	unzip -o "$UPD_ZIP" boot.img -d " /tmp/"
+	dd if=/tmp/boot.img of=$BOOTIMAGE
+	rm /tmp/boot.img
+	return 0
 }
 
 #Set symlink
-symlink(){
+symlink() {
 	ln -s $1 $2
+	return 0
 }
 
 #Delete file\folder
-delete(){
-	rm -f $1
+delete() {
+	retval=1
+	ui_print "Removing $1 ..."
+	# if a directory
+	if [ -d "$1" ]; then
+		if [ -n "$(ls -A $1)" ]; then
+			# not empty
+			rm -r $1
+			retval=$?
+		else
+			rmdir $1
+			retval=$?
+		fi
+	else
+		# file
+		if [ -e "$1" ]; then
+			rm $1
+			retval=$?
+		else
+			ui_print "FAILED - $1 does not exist"
+		fi
+	fi
+	if [ "$retval" != "0" ]; then
+		ui_print "FAILED - Removing $1 failed! Exit code: $retval"
+		return 0
+	fi
+	ui_print "SUCCESS - Removed $1"
+	return 0
 }
 
-#Delete file\folder reursive
-delete_reursive(){
-	rm -rf $1
+# same with delete()
+# TODO Support multiple arguments
+delete_recursive() {
+	retval=1
+	ui_print "Removing $1 ..."
+	# if a directory
+	if [ -d "$1" ]; then
+		if [ -n "$(ls -A $1)" ]; then
+			# not empty
+			rm -r $1
+			retval=$?
+		else
+			rmdir $1
+			retval=$?
+		fi
+	else
+		# file
+		if [ -e "$1" ]; then
+			rm $1
+			retval=$?
+		else
+			ui_print "FAILED - $1 does not exist"
+		fi
+	fi
+	if [ "$retval" != "0" ]; then
+		ui_print "FAILED - Removing $1 failed! Exit code: $retval"
+		return 0
+	fi
+	ui_print "SUCCESS - Removed $1"
+	return 0
 }
+
+# mount /system
+# mount system
+# mount ext4 /dev/block/platform/msm_sdcc.1/by-name/system /system
+try_mount() {
+	ui_print "Trying to mount $1 ..."
+	if [ "$2" = "" ]; then
+		MOUNTS=$(cat /proc/mounts | grep "$1" | wc -l)
+		if [ "$MOUNTS" != "0" ]; then
+			ui_print "(1) Mounted $1 "
+			return 0
+		fi
+		/sbin/mount $1
+		if [ "$?" != "0" ]; then
+			DEVICE=$(grep -i "$1" /etc/*.fstab | awk -F' ' '{print $1}')
+			MOUNTPOINT=$(grep -i "$1" /etc/*.fstab | awk -F' ' '{print $2}')
+			FSTYPE=$(grep -i "$1" /etc/*.fstab | awk -F' ' '{print $3}')
+			OPTIONS=$(grep -i "$1" /etc/*.fstab | awk -F' ' '{print $4}')
+			/sbin/mount -t $FSTYPE -o $OPTIONS $DEVICE $MOUNTPOINT
+			if [ "$?" != "0" ]; then
+				DEVICE=$(find /dev/block/platform/msm_sdcc.1/by-name/ -iname "$1")
+				MOUNTPOINT=$1
+				FSTYPE=$(/sbin/busybox blkid ${DEVICE} | /sbin/busybox awk -F' ' '{ print $NF }' | /sbin/busybox awk -F'[\"=]' '{ print $3 }');
+				/sbin/mount -t $FSTYPE $DEVICE $MOUNTPOINT
+				retval=$?
+				if [ "$retval" != "0" ]; then
+					ui_print "FAILED - Mounting $1 failed!"
+					exit 1
+				fi
+			fi
+		fi
+	fi
+	if [ "$1" != "" -a "$2" != "" -a "$3" != ""]; then
+		MOUNTS=$(cat /proc/mounts | grep "$3" | wc -l)
+		if [ "$MOUNTS" != "0" ]; then
+			ui_print "(2) Mounted $1 "
+			return 0
+		fi
+		/sbin/mount -t "$1" "$2" "$3"
+		retval=$?
+		if [ "$retval" != "0" ]; then
+			ui_print "FAILED - Mounting $1 failed!"
+			exit 1
+		fi
+	fi
+	ui_print "(3) Mounted $1 "
+	return 0
+}
+
+try_unmount() {
+	ui_print "Trying to unmount $1 ..."
+	/sbin/umount -l $1
+	retval=$?
+	if [ "$retval" != "0" ]; then
+		ui_print "FAILED - Unmounting $1 failed! Exit code: $retval"
+		return 0
+	fi
+	ui_print "SUCCESS - Unmounted $1"
+	return 0
+}
+
 ui_print;
-if [ "$UPD_ZIP" == " /tmp/update.zip" / ]; then
-	ui_print "Can not run in sideload mode"
+if [ "$UPD_ZIP" == "/tmp/update.zip" ]; then
+	ui_print "Cannot run in sideload mode"
 	exit 1
 fi
 if [ -d $UPD_TEMP_FOLDER ]
 	then rm -rf $UPD_TEMP_FOLDER
 fi
 mkdir -p $UPD_TEMP_FOLDER
-package_extract_file META-INF/com/google/android/updater-script $UPD_TEMP_FOLDER/updater-script || ui_print "Can not extract updater-script. Do you have it in package?"
+package_extract_file META-INF/com/google/android/updater-script $UPD_TEMP_FOLDER/updater-script || ui_print "Cannot extract updater-script. Do you have it in package?"
 chmod 777 $UPD_TEMP_FOLDER/updater-script
 . $UPD_TEMP_FOLDER/updater-script $@
 exit $?
-

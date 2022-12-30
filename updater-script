@@ -1,0 +1,49 @@
+ui_print ""
+ui_print ""
+ui_print "================="
+ui_print "    Debloater    "
+ui_print "================="
+
+
+try_mount /system
+try_mount /data
+try_mount /cache
+
+delete /system/custpack/app/removeable/withlibs/antivirus-free-production-mincoredb-release-5.1.1-221227-407_-_TCL_-_AV_v5.1.1_MPC-1184.apk
+delete /system/custpack/app/removeable/withlibs/CleanMaster-v5.11.1.850-OnlyForAndroidM_2010000982_20151109_CMCM.apk
+delete /system/custpack/app/removeable/withlibs/Gameloft_Global_SpiderManUltimatePower_SMS_Alcatel_Generic_127_BV26.apk
+delete /system/custpack/app/removeable/withlibs/Puzzle_pets_Gameloft_Global_DBMF_Generic_134_AQ10.apk
+delete /system/custpack/app/removeable/withlibs/Twitter-5.92.0-release-20160120.apk
+delete /system/custpack/app/removeable/withlibs/WhatsApp_v2.12.297_20151006_Whatsapp.apk
+
+
+delete_recursive /system/app/Chrome
+delete_recursive /system/app/Hangouts
+delete_recursive /system/app/Drive
+delete_recursive /system/app/Youtube
+
+delete /system/custpack/app/unremoveable/priv-app/FB_AppInstaller_20151116.apk
+delete /system/custpack/app/unremoveable/priv-app/FB_AppManager_20151125_v9.1.apk
+delete /system/custpack/app/unremoveable/withlibs/signed-Translate-arm-5.0.0.RC24.121993595-API_17+.apk
+delete /system/custpack/app/unremoveable/withlibs/SwiftKey-market-M-armeabi-v7a-release-6.3.4.98-811861539.apk
+delete /system/custpack/app/unremoveable/withoutlibs/Calculator_Global_v5.2.2.3.0331.0_signed_releasekey_alldpi.apk
+delete /system/custpack/app/unremoveable/withoutlibs/Facebook_stub_20151125_v9.1.apk
+delete /system/custpack/app/unremoveable/withoutlibs/Instagram_stub_20151125_v9.1.apk
+delete /system/custpack/app/unremoveable/withoutlibs/Messenger_stub_20151120_v8.0.apk
+delete /system/custpack/app/unremoveable/withoutlibs/OnetouchBooster_global_v5.0.4.2.0216.0_signed_platform_Alldpi.apk
+delete /system/custpack/app/unremoveable/withoutlibs/OnetouchCloud_V3.1.3.0349_20161019_095955_release_signed_for_m_common.apk
+delete /system/custpack/app/unremoveable/withoutlibs/SwiftKeyFactorySettings-tcl_phone-2.0.0.156.apk
+delete /system/custpack/app/unremoveable/withoutlibs/Tethering_Global_v1.0.0015.0_signed_releasekey_alldpi.apk
+delete /system/custpack/app/unremoveable/withoutlibs/FileManager_Global_v1.0.0067.0_signed_platformkey_alldpi.apk
+delete /system/custpack/app/unremoveable/withlibs/Videos/Videos.apk
+delete /system/custpack/app/unremoveable/priv-app/Apps_V5.4.0.864_20160714_alcatel_release.apk
+delete /system/custpack/app/unremoveable/priv-app/FeaturedApps_1.1_75_20160322_155116_release.apk
+
+mkdir /system/cow
+delete /system/cow
+
+ui_print "Done"
+
+try_unmount /system
+try_unmount /data
+try_unmount /cache

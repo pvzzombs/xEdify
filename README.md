@@ -7,8 +7,9 @@
 <br />
  Created by `blackeangel` (Donate: [PayPal](https://www.paypal.me/blackeangel "PayPal"))<br />
  Edited by `Octanium` (Donate: [Patreon](https://www.patreon.com/octanium "Patreon"))<br />
+ Improved by `pvzzombs` (github.com/pvzzombs)
 ### Using:
- Like standart update-binary.<br />
+ Like standard update-binary.<br />
  Put in script:<br />
  ```
 /META-INF/com/google/android/update-binary - xEdify binary
